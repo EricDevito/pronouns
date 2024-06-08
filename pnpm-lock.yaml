@@ -9,8 +9,8 @@ dependencies:
     specifier: ^1.0.6
     version: 1.0.6(react@18.2.0)
   '@nouns/assets':
-    specifier: ^0.5.0
-    version: 0.5.0
+    specifier: ^0.6.0
+    version: 0.6.0
   '@nouns/sdk':
     specifier: ^0.4.0
     version: 0.4.0(ethers@5.6.9)
@@ -1013,8 +1013,8 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.13.0
 
-  /@nouns/assets@0.5.0:
-    resolution: {integrity: sha512-WWap8jldLvoUPBjfi9r5Ulj4Q7D7NW4XIPJhmlDqR4QpAidy3h13dIKOvW0ZDtzTyOPJ+/hGQTJGc7cZckTx0g==}
+  /@nouns/assets@0.6.0:
+    resolution: {integrity: sha512-EYsX+IqlsoBVmqIJ/Hc5eD7o75vBwVKvQdqz3Mb5wwCRK7TCze+ir6h67PiC3T/X53TdCcY3D20en8D0LLlyjA==}
     dependencies:
       '@ethersproject/bignumber': 5.6.2
       '@ethersproject/solidity': 5.6.1

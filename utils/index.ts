@@ -50,8 +50,8 @@ export const getBidCount = (bids: Bid[], bidder: string): number =>
  *********************
  */
 
-const NOUNS_SUBGRAPH_URL = 'https://api.thegraph.com/subgraphs/name/nounsdao/nouns-subgraph'
-const NOUNS_OPENSEA_URL = 'https://api.opensea.io/api/v1/collection/nouns/stats'
+const NOUNS_SUBGRAPH_URL = 'https://api.goldsky.com/api/public/project_cldf2o9pqagp43svvbk5u3kmo/subgraphs/nouns/prod/gn'
+const NOUNS_OPENSEA_URL = 'https://api.opensea.io/api/v2/collections/nouns/stats'
 
 const nounQuery = (id: number) => `{
     auction(id: ${id}) {
