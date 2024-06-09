@@ -1,6 +1,6 @@
 import React from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
-import { ChainId, getContractAddressesForChainOrThrow, NounsAuctionHouseABI } from '@nouns/sdk'
+import { ChainId, getContractAddressesForChainOrThrow } from '@nouns/sdk'
 import { getDefaultProvider, utils, BigNumber as EthersBN } from 'ethers'
 import BigNumber from 'bignumber.js'
 import { usePrepareContractWrite, useContractWrite, useAccount, useBalance, useWaitForTransaction } from 'wagmi'
@@ -83,10 +83,10 @@ const Bid = ({ minAmount, id }: BidProps) => {
 
   const { config, isError: bidError } = usePrepareContractWrite({
     addressOrName: nounsAuctionHouseProxy,
-    contractInterface: NounsAuctionHouseABI,
+    contractInterface: ['function createBid(uint256,uint32) payable'],
     enabled: isConnected && Boolean(minBid),
-    functionName: 'createBid',
-    args: [id],
+    functionName: 'createBid(uint256,uint32)',
+    args: [id, 14],
     overrides: {
       value: EthersBN.from(utils.parseEther(amount || '0')),
     },
@@ -134,7 +134,7 @@ const Bid = ({ minAmount, id }: BidProps) => {
   }
   const availableEther = new BigNumber(data?.formatted.toString() || 0).minus(gasAmount).toFixed(2, BigNumber.ROUND_DOWN).toString()
   return (
-    <div className="border border-white/10 rounded-xl p-4 flex flex-col gap-y-4">
+    <div className="flex flex-col gap-y-4 rounded-xl border border-white/10 p-4">
       <div className="flex justify-between">
         <Paragraph>Bid controls</Paragraph>
         {isConnected && (
@@ -155,7 +155,7 @@ const Bid = ({ minAmount, id }: BidProps) => {
         suffix={
           amount?.length ? (
             <Button type="link" onClick={() => setAmount('')}>
-              <XCircleIcon className="w-5 h-5 transition ease-in-out hover:text-white/40 text-white/60" />
+              <XCircleIcon className="h-5 w-5 text-white/60 transition ease-in-out hover:text-white/40" />
             </Button>
           ) : undefined
         }
