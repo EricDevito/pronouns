@@ -3,13 +3,13 @@ import { XCircleIcon } from '@heroicons/react/solid'
 import { ChainId, getContractAddressesForChainOrThrow } from '@nouns/sdk'
 import { getDefaultProvider, utils, BigNumber as EthersBN } from 'ethers'
 import BigNumber from 'bignumber.js'
-import { usePrepareContractWrite, useContractWrite, useAccount, useBalance, useWaitForTransaction } from 'wagmi'
+import { usePrepareContractWrite, useContractWrite, useAccount, useBalance, useWaitForTransaction, Address } from 'wagmi'
 import Button from 'components/Button'
 import Input from 'components/Input'
 import Paragraph from 'components/Paragraph'
 import Toast from 'components/Toast'
 import { Status, ToastData } from 'utils/types'
-
+import { parseEther } from 'viem'
 const { nounsAuctionHouseProxy } = getContractAddressesForChainOrThrow(ChainId.Mainnet)
 
 const pctBidAmounts = [5, 10, 20]
@@ -55,7 +55,7 @@ const Bid = ({ minAmount, id }: BidProps) => {
   const [txHash, setTxHash] = React.useState('')
   const minBid = computeMinimumNextBid(new BigNumber(minAmount))
   const { data } = useBalance({
-    addressOrName: address,
+    address: address,
     formatUnits: 'ether',
     watch: true,
   })
@@ -81,15 +81,38 @@ const Bid = ({ minAmount, id }: BidProps) => {
     }
   }
 
-  const { config, isError: bidError } = usePrepareContractWrite({
-    addressOrName: nounsAuctionHouseProxy,
-    contractInterface: ['function createBid(uint256,uint32) payable'],
-    enabled: isConnected && Boolean(minBid),
-    functionName: 'createBid(uint256,uint32)',
-    args: [id, 14],
-    overrides: {
-      value: EthersBN.from(utils.parseEther(amount || '0')),
+  const NounsAuctionHouseV2ABI = [
+    {
+      inputs: [
+        {
+          internalType: 'uint256',
+          name: 'nounId',
+          type: 'uint256',
+        },
+        {
+          internalType: 'uint32',
+          name: 'clientId',
+          type: 'uint32',
+        },
+      ],
+      name: 'createBid',
+      outputs: [],
+      stateMutability: 'payable',
+      type: 'function',
     },
+  ]
+
+  const {
+    config,
+    isError: bidError,
+    error,
+  } = usePrepareContractWrite({
+    address: nounsAuctionHouseProxy as Address,
+    abi: NounsAuctionHouseV2ABI,
+    enabled: isConnected && Boolean(minBid),
+    functionName: 'createBid',
+    args: [id, 14],
+    value: BigInt(parseEther(amount || '0').toString()),
   })
 
   const { write: createBid, data: bidTxData } = useContractWrite(config)
@@ -104,7 +127,7 @@ const Bid = ({ minAmount, id }: BidProps) => {
       })
       const gasPrice = await provider.getGasPrice()
       const totalGas = new BigNumber(utils.formatEther(gasPrice))
-        .times(new BigNumber(config?.request?.gasLimit?.toString() || 0))
+        .times(new BigNumber(config?.request?.gasPrice?.toString() || 0))
         .toString()
       setGasAmount(totalGas)
     }
@@ -127,7 +150,7 @@ const Bid = ({ minAmount, id }: BidProps) => {
         return triggerErrorToast('Bid amount is below reserve amount')
       }
 
-      return bidError ? triggerErrorToast('Insufficient Balance') : createBid?.()
+      return bidError ? triggerErrorToast(`Insufficient Balance: ${error}`) : createBid?.()
     } else {
       triggerErrorToast('Wallet not connected')
     }

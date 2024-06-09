@@ -1,7 +1,8 @@
 import React from 'react'
-import BigNumber from 'bignumber.js'
-import { utils, BigNumber as EthersBN } from 'ethers'
-import { useBalance } from 'wagmi'
+// import BigNumber from 'bignumber.js'
+// import { utils, BigNumber as EthersBN } from 'ethers'
+import { formatEther } from 'viem'
+import { Address, useBalance } from 'wagmi'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import Account from 'components/Account'
 import Paragraph from 'components/Paragraph'
@@ -20,16 +21,16 @@ type HeaderProps = {
 type ListProps = {
   items: Bid[] | undefined
 }
-
+// type EthereumAddress = `0x${string}`;
 const Header = ({ address, txHash, bidCount = 0 }: HeaderProps) => {
   const { data } = useBalance({
-    addressOrName: address,
+    address: address as Address,
   })
   const { data: owner, status: ownerStatus } = useOwner(address)
   return (
-    <div className="relative rounded-lg bg-white/5 py-4 px-5">
+    <div className="relative rounded-lg bg-white/5 px-5 py-4">
       <a
-        className="absolute top-2.5 right-2.5 z-10 transition ease-in-out hover:text-white/70"
+        className="absolute right-2.5 top-2.5 z-10 transition ease-in-out hover:text-white/70"
         aria-label="Top bid on etherscan"
         rel="noreferrer"
         target="_blank"
@@ -82,7 +83,7 @@ const List = ({ items }: ListProps) => (
   <div className="flex flex-col gap-y-4 p-3">
     {items?.map((bid: Bid) => (
       <Paragraph key={bid.id} className="flex items-center justify-between truncate">
-        <Account className="max-w-[50%] opacity-70 xl:max-w-none" alwaysAvatar address={bid?.bidder?.id} />
+        <Account className="max-w-[50%] opacity-70 xl:max-w-none" alwaysAvatar address={bid?.bidder?.id as `0x${string}`} />
         <a
           className="mr-1 flex items-center gap-x-4 transition ease-in-out hover:text-white/80"
           rel="noopener noreferer noreferrer"
@@ -91,7 +92,7 @@ const List = ({ items }: ListProps) => (
           href={`https://etherscan.io/address/${bid?.bidder.id}`}
         >
           <span className="min-w-[50px] tabular-nums text-white hover:text-white/80">
-            Ξ {new BigNumber(utils.formatEther(EthersBN.from((bid?.amount || 0).toString()))).toFixed(2, BigNumber.ROUND_CEIL)}
+            {/* Ξ {new BigNumber(formatEther(BigInt((bid?.amount || 0))))}  */}Ξ {formatEther(BigInt(bid?.amount || 0))}
           </span>
           <ExternalLinkIcon aria-label="Etherscan" className="h-4 w-4 opacity-60" />
         </a>
