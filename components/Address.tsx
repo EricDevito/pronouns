@@ -27,48 +27,49 @@ const Header = ({ address, txHash, bidCount = 0 }: HeaderProps) => {
   })
   const { data: owner, status: ownerStatus } = useOwner(address)
   return (
-    <div className="bg-white/5 rounded-lg py-4 px-5 relative">
+    <div className="relative rounded-lg bg-white/5 py-4 px-5">
       <a
-        className="absolute top-2.5 right-2.5 z-10 hover:text-white/70 transition ease-in-out"
+        className="absolute top-2.5 right-2.5 z-10 transition ease-in-out hover:text-white/70"
         aria-label="Top bid on etherscan"
         rel="noreferrer"
         target="_blank"
-        href={`https://etherscan.io/tx/${txHash}`}
+        // href={`https://etherscan.io/tx/${txHash}`}
+        href={`https://etherscan.io/address/${address}`}
       >
-        <ExternalLinkIcon aria-label="Etherscan" className="opacity-60 h-4 w-4" />
+        <ExternalLinkIcon aria-label="Etherscan" className="h-4 w-4 opacity-60" />
       </a>
       <div className="flex flex-col justify-between gap-y-4">
         <div>
-          <Paragraph className="xxs:text-sm text-xs opacity-60 mb-2">Highest Bidder</Paragraph>
+          <Paragraph className="mb-2 text-xs opacity-60 xxs:text-sm">Highest Bidder</Paragraph>
           <Paragraph className="flex items-center justify-between text-lg">
             <Account alwaysAvatar address={address} />
           </Paragraph>
         </div>
         <div className="flex items-center justify-between gap-x-2">
           <div>
-            <Paragraph className="xxs:text-sm text-xs opacity-60 mb-2">
+            <Paragraph className="mb-2 text-xs opacity-60 xxs:text-sm">
               Dry Powder <Tooltip darkBg text="Amount of ETH in top bidder's wallet" />
             </Paragraph>
-            <Paragraph className="font-normal text-lg tracking-widest">
+            <Paragraph className="text-lg font-normal tracking-widest">
               Ξ {formatNumber(Number((+(data?.formatted || 0)).toFixed(2)))}
             </Paragraph>
           </div>
           <div>
-            <Paragraph className="xxs:text-sm text-xs opacity-60 mb-2">
+            <Paragraph className="mb-2 text-xs opacity-60 xxs:text-sm">
               Current Bids <Tooltip darkBg text="Number of bids placed by top bidder in this auction" />
             </Paragraph>
-            <Paragraph className="font-normal text-lg tracking-wide">{bidCount}</Paragraph>
+            <Paragraph className="text-lg font-normal tracking-wide">{bidCount}</Paragraph>
           </div>
           <div>
-            <Paragraph className="xxs:text-sm text-xs opacity-60 mb-2">
+            <Paragraph className="mb-2 text-xs opacity-60 xxs:text-sm">
               Nouns Owned <Tooltip darkBg text="Number of Nouns owned by top bidder" />
             </Paragraph>
             <Skeleton
               className=""
               loading={ownerStatus !== 'success'}
-              loadingElement={<div className="animate-pulse h-5 mb-1 bg-white/20 rounded col-span-2" />}
+              loadingElement={<div className="col-span-2 mb-1 h-5 animate-pulse rounded bg-white/20" />}
             >
-              <Paragraph className="font-normal text-lg tracking-wide">{owner?.tokenBalanceRaw}</Paragraph>
+              <Paragraph className="text-lg font-normal tracking-wide">{owner?.tokenBalanceRaw}</Paragraph>
             </Skeleton>
           </div>
         </div>
@@ -78,20 +79,21 @@ const Header = ({ address, txHash, bidCount = 0 }: HeaderProps) => {
 }
 
 const List = ({ items }: ListProps) => (
-  <div className="p-3 flex flex-col gap-y-4">
+  <div className="flex flex-col gap-y-4 p-3">
     {items?.map((bid: Bid) => (
       <Paragraph key={bid.id} className="flex items-center justify-between truncate">
-        <Account className="max-w-[50%] xl:max-w-none opacity-70" alwaysAvatar address={bid?.bidder?.id} />
+        <Account className="max-w-[50%] opacity-70 xl:max-w-none" alwaysAvatar address={bid?.bidder?.id} />
         <a
-          className="flex items-center gap-x-4 hover:text-white/80 transition ease-in-out mr-1"
+          className="mr-1 flex items-center gap-x-4 transition ease-in-out hover:text-white/80"
           rel="noopener noreferer noreferrer"
           target="_blank"
-          href={`https://etherscan.io/tx/${bid?.id}`}
+          // href={`https://etherscan.io/tx/${bid?.id}`}
+          href={`https://etherscan.io/address/${bid?.bidder.id}`}
         >
           <span className="min-w-[50px] tabular-nums text-white hover:text-white/80">
             Ξ {new BigNumber(utils.formatEther(EthersBN.from((bid?.amount || 0).toString()))).toFixed(2, BigNumber.ROUND_CEIL)}
           </span>
-          <ExternalLinkIcon aria-label="Etherscan" className="opacity-60 h-4 w-4" />
+          <ExternalLinkIcon aria-label="Etherscan" className="h-4 w-4 opacity-60" />
         </a>
       </Paragraph>
     ))}
