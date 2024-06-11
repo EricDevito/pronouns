@@ -14,8 +14,8 @@ import { EncodedImage } from '@nouns/assets/dist/types'
 const traitProbabilityMap: Record<string, number> = {
   Background: 0.5,
   Body: 0.0333333333,
-  Accessory: 0.00714285714,
-  Head: 0.0041322314,
+  Accessory: 0.0070422535,
+  Head: 0.0039840637,
   Glasses: 0.0434782609,
 }
 
@@ -43,6 +43,7 @@ const getProgress = (total: number, pct: number, status: Status) => {
   return {
     name: '',
     value: <Progress pct={pct} status={status} rarity={rarity} />,
+    href: '',
   }
 }
 
@@ -56,23 +57,30 @@ const generateTableData = (
   }[]
 ) => {
   const traitArr = ['background', 'body', 'accessory', 'head', 'glasses']
-  const rowsWithTraits = traitArr.map((trait, j) => [
-    { name: capitalize(trait), value: nounParts?.[j].name },
-    { name: 'Avg. Sale', value: '' },
-    { name: 'Population', value: '' },
-    { name: '', value: <Progress rarity="Common" /> },
-  ])
+  const rowsWithTraits = traitArr.map((trait, j) => {
+    const regular = `${trait}-${nounParts?.[j].name}`
+    const probRef = `https://www.probe.wtf/nouns?${trait}=${
+      nounParts?.[j].name == 'Warm' ? 'e1d7d5' : nounParts?.[j].name == 'Cool' ? 'd5d7e1' : regular
+    }`
+
+    return [
+      { name: capitalize(trait), value: nounParts?.[j].name, href: '' },
+      // { name: 'Avg. Sale', value: '', href: '' },
+      { name: 'Population', value: '', href: probRef },
+      { name: '', value: <Progress rarity="Common" />, href: '' },
+    ]
+  })
   if (apiData) {
     return rowsWithTraits.map((row, j) =>
       row.map((rowData, i) => {
+        // if (i === 1) {
+        //   const amount = apiData[traitArr[j]]?.median_sale_price?.toFixed(2)
+        //   return { ...rowData, value: amount ? `Ξ ${amount}` : '—' }
+        // }
         if (i === 1) {
-          const amount = apiData[traitArr[j]]?.median_sale_price?.toFixed(2)
-          return { ...rowData, value: amount ? `Ξ ${amount}` : '—' }
-        }
-        if (i === 2) {
           return { ...rowData, value: apiData[traitArr[j]]?.total_occurrence ?? '1' }
         }
-        if (i === 3) {
+        if (i === 2) {
           return getProgress(
             apiData[traitArr[j]]?.total_occurrence,
             cdf(apiData[traitArr[j]]?.total_occurrence, (latestId || 1000) + 1, traitProbabilityMap[row[0].name]),
@@ -124,7 +132,7 @@ const Table = ({ seed, status, id, latestId }: TableProps) => {
   const tableData = generateTableData(data?.body, dataStatus, latestId, nounParts)
 
   return (
-    <div className="grid min-w-[480px] grid-cols-[40px_repeat(3,_minmax(0,_1fr))_auto] gap-4">
+    <div className="grid min-w-[480px] grid-cols-[40px_repeat(2,_minmax(0,_1fr))_auto] gap-4">
       {tableData.map((row, i) => (
         <React.Fragment key={i}>
           <div className={`${bg} flex h-10 w-10 rounded text-black`}>
@@ -155,7 +163,18 @@ const Table = ({ seed, status, id, latestId }: TableProps) => {
                 data.value
               ) : (
                 <Skeleton loading={dataStatus !== 'success'} loadingElement={<div className="h-6 animate-pulse rounded bg-white/20" />}>
-                  <div className="text-md truncate font-medium">{data.value}</div>
+                  {j == 1 ? (
+                    <a
+                      href={data.href}
+                      className="text-md mr-1 truncate font-medium transition ease-in-out hover:text-white/80"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {data.value}
+                    </a>
+                  ) : (
+                    <div className="text-md truncate font-medium">{data.value}</div>
+                  )}
                 </Skeleton>
               )}
             </div>

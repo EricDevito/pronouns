@@ -2,13 +2,23 @@ Pronouns is a Typescript, [Next.js](https://nextjs.org/), and [Tailwind](https:/
 
 ## Getting Started
 
-First, [install pnpm](https://pnpm.io/installation).
+Install prerequisites:
 
-Second, run the development server:
+- [install pnpm](https://pnpm.io/installation)
 
+Install dependencies:
 ```bash
-vercel env pull .env.local
-vercel dev
+pnpm install
+```
+
+Copy local example environment file and fill out the newly created .env file:
+```
+cp .env.example.local .env
+```
+
+Run locally:
+```
+pmpn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

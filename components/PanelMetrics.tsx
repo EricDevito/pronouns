@@ -1,5 +1,4 @@
 import React from 'react'
-import { useBalance, useContractRead } from 'wagmi'
 import BigNumber from 'bignumber.js'
 import { utils, BigNumber as EthersBN } from 'ethers'
 import Metric from 'components/Metric'
@@ -41,15 +40,6 @@ const metrics = [
   },
 ]
 
-const calculateBookValue = (latestId?: number, eth?: string, steth?: string) =>
-  new BigNumber(eth || 0)
-    .plus(new BigNumber(utils.formatEther(EthersBN.from(steth || 0))))
-    .dividedBy(new BigNumber(latestId ? latestId - 1 : 1))
-    .toFixed(2, BigNumber.ROUND_CEIL)
-    .toString()
-
-const stethAbi = ['function balanceOf(address) view returns (uint)']
-
 const idToTrailingValues = (ema: Record<string, string>[], id?: number) => {
   if (id === 0) {
     return '—'
@@ -83,28 +73,43 @@ const PanelMetrics = ({ amount, latestId, id, isNounder, className = '', seed }:
   const { data: ema, status: emaStatus } = useAmounts()
   const { data: osData, status: osDataStatus } = useOpenseaData()
   const [bookValue, setBookValue] = React.useState('0')
+  const [combinedValue, setCombinedValue] = React.useState(null)
+  const [tokensERC20, setTokensERC20] = React.useState(null)
   const { data: seedData, status: seedStatus } = useTraitStats(seed as unknown as Record<string, string>, id)
-
-  const { data: ethBalanceData } = useBalance({
-    addressOrName: '0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71',
-    formatUnits: 'ether',
-    watch: true,
-  })
-
-  const { data: stethBalanceData } = useContractRead({
-    addressOrName: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
-    contractInterface: stethAbi,
-    functionName: 'balanceOf',
-    args: '0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71',
-  })
 
   React.useEffect(() => {
     setLoading(true)
-    setBookValue(calculateBookValue(latestId, ethBalanceData?.formatted, stethBalanceData?.toString()))
+
+    const fetchAssetValuePerNoun = async () => {
+      try {
+        const response = await fetch('https://api.nouns.biz/stats')
+        const data = await response.json()
+        const tokensERC20 = data.assets.contracts.treasury.tokensERC20.reduce((acc: any, token: any) => {
+          acc[token.tokenName.toLowerCase()] = {
+            tokenQuantity: token.tokenQuantity,
+            tokenValue: {
+              usd: token.tokenValue.usd,
+              eth: token.tokenValue.eth,
+            },
+          }
+          return acc
+        })
+
+        setTokensERC20(tokensERC20)
+        setCombinedValue(data.assets.contracts.treasury.combinedValue.eth.toFixed(2))
+        setBookValue(data.assets.assetValuePerNoun.eth.toFixed(2))
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch asset value per Noun:', error)
+      }
+    }
+
+    fetchAssetValuePerNoun()
+
     if (latestId !== undefined) {
       setLoading(false)
     }
-  }, [latestId, ethBalanceData, stethBalanceData])
+  }, [latestId])
 
   return (
     <div className={`grid grid-cols-2 gap-4 ${className}`}>
@@ -116,7 +121,8 @@ const PanelMetrics = ({ amount, latestId, id, isNounder, className = '', seed }:
           status={loading ? 'loading' : 'success'}
           description={metrics[0].description}
           icon={metrics[0].icon}
-          tooltipText={metrics[0].tooltipText}
+          tooltipText={`Total DAO assets (Ξ ${combinedValue}) divided by number of Nouns in circulation.`}
+          // tooltipText={metrics[0].tooltipText}
         />
       </div>
       <div className="col-span-full xxs:col-auto">
@@ -135,11 +141,12 @@ const PanelMetrics = ({ amount, latestId, id, isNounder, className = '', seed }:
           border
           statClass="tabular-nums"
           bgColor={metrics[2].bgColor}
-          stat={calcPriceVsFloor(isNounder, amount, osData?.stats?.floor_price)}
+          stat={calcPriceVsFloor(isNounder, amount, osData?.total?.floor_price)}
           status={osDataStatus}
           description={metrics[2].description}
           icon={metrics[2].icon}
-          tooltipText={metrics[2].tooltipText}
+          // tooltipText={metrics[2].tooltipText}
+          tooltipText={`Percentage difference between auction price (or current bid) and the secondary floor price (Ξ ${osData?.total?.floor_price}).`}
         />
       </div>
       <div className="col-span-full xxs:col-auto">
@@ -149,7 +156,10 @@ const PanelMetrics = ({ amount, latestId, id, isNounder, className = '', seed }:
           bgColor={metrics[3].bgColor}
           stat={
             seedData?.body?.head?.median_mint_price ? (
-              `Ξ ${new BigNumber(seedData?.body?.head?.median_mint_price).toFixed(2, BigNumber.ROUND_CEIL).toString()}`
+              `Ξ ${new BigNumber(seedData?.body?.head?.median_mint_price)
+                .dividedBy(new BigNumber(10).pow(18))
+                .toFixed(2, BigNumber.ROUND_CEIL)
+                .toString()}`
             ) : seedData?.body?.head?.total_occurrence === 1 ? (
               <span className="text-ui-green">First Mint</span>
             ) : (

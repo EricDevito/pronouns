@@ -1,9 +1,9 @@
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
-import PlausibleProvider from 'next-plausible'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, getDefaultWallets, darkTheme } from '@rainbow-me/rainbowkit'
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi'
+import { configureChains, createConfig, WagmiConfig } from 'wagmi'
+import { mainnet } from 'wagmi/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 import resolveConfig from 'tailwindcss/resolveConfig'
@@ -13,19 +13,23 @@ import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient()
 const styleConfig = resolveConfig(tailwindConfig)
-const { chains, provider, webSocketProvider } = configureChains(
-  [chain.mainnet],
-  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }), publicProvider()]
+const { publicClient: provider, webSocketPublicClient: webSocketProvider } = configureChains(
+  [mainnet],
+  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? '' }), publicProvider()]
 )
+
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? ''
 const { connectors } = getDefaultWallets({
   appName: 'Pronouns',
-  chains,
+  projectId,
+  chains: [mainnet],
 })
-const wagmiClient = createClient({
+
+const wagmiClient = createConfig({
   autoConnect: true,
-  connectors,
-  provider,
-  webSocketProvider,
+  connectors: connectors,
+  publicClient: provider,
+  webSocketPublicClient: webSocketProvider,
 })
 
 const App = ({ Component, pageProps }: AppProps) => (
@@ -51,24 +55,22 @@ const App = ({ Component, pageProps }: AppProps) => (
       <title>Pronouns | The Nouns interface for power users</title>
       <link rel="shortcut icon" href="/favicon.ico" />
     </Head>
-    <PlausibleProvider domain="pronouns.gg">
-      <QueryClientProvider client={queryClient}>
-        <WagmiConfig client={wagmiClient}>
-          <RainbowKitProvider
-            theme={darkTheme({
-              // @ts-ignore
-              accentColor: styleConfig?.theme?.colors?.white,
-              // @ts-ignore
-              accentColorForeground: styleConfig?.theme?.colors?.ui?.black,
-              fontStack: 'system',
-            })}
-            chains={chains}
-          >
-            <Component {...pageProps} />
-          </RainbowKitProvider>
-        </WagmiConfig>
-      </QueryClientProvider>
-    </PlausibleProvider>
+    <QueryClientProvider client={queryClient}>
+      <WagmiConfig config={wagmiClient}>
+        <RainbowKitProvider
+          theme={darkTheme({
+            // @ts-ignore
+            accentColor: styleConfig?.theme?.colors?.white,
+            // @ts-ignore
+            accentColorForeground: styleConfig?.theme?.colors?.ui?.black,
+            fontStack: 'system',
+          })}
+          chains={[mainnet]}
+        >
+          <Component {...pageProps} />
+        </RainbowKitProvider>
+      </WagmiConfig>
+    </QueryClientProvider>
   </>
 )
 

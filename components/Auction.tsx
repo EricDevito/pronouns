@@ -1,12 +1,13 @@
 import React from 'react'
-import BigNumber from 'bignumber.js'
-import { utils, BigNumber as EthersBN } from 'ethers'
+// import BigNumber from 'bignumber.js'
+// import { utils, BigNumber as EthersBN } from 'ethers'
 import { Address } from 'components/Address'
 import Account from 'components/Account'
 import Statistic from 'components/Statistic'
 import { getBidCount, formatAuctionDate } from 'utils/index'
 import { NOUNDERS_ENS } from 'utils/constants'
 import { AuctionState, Status, NounType } from 'utils/types'
+import { formatEther } from 'viem'
 
 type AuctionProps = {
   id?: number | undefined
@@ -38,10 +39,8 @@ const Auction = ({
   // Handling browser inconsistency issues with Intl.DateTimeFormat
   const endTime = formatAuctionDate(noun?.endTime).split(', ')
   const formattedEndTime = endTime.length < 2 ? formatAuctionDate(noun?.endTime).split(' at ') : endTime
-  const renderTopBid = () =>
-    isNounder
-      ? 'N/A'
-      : `Ξ ${new BigNumber(utils.formatEther(EthersBN.from((noun?.amount || 0).toString()))).toFixed(2, BigNumber.ROUND_CEIL)}`
+  const renderTopBid = () => (isNounder ? 'N/A' : `Ξ ${formatEther(BigInt((noun?.amount || 0).toString()))}`)
+  //  `Ξ ${new BigNumber(utils.formatEther(EthersBN.from((noun?.amount || 0).toString()))).toFixed(2, BigNumber.ROUND_CEIL)}`
 
   const renderAuctionStatus = () => {
     if (id === latestId && !isNounder && Date.now() < Number(noun?.endTime) * 1000) {
@@ -54,9 +53,9 @@ const Auction = ({
       return (
         <>
           {hours < 10 ? `0${hours}` : hours}
-          <span className="px-0.5 opacity-60 relative bottom-0.5">:</span>
+          <span className="relative bottom-0.5 px-0.5 opacity-60">:</span>
           {minutes < 10 ? `0${minutes}` : minutes}
-          <span className="px-0.5 opacity-60 relative bottom-0.5">:</span>
+          <span className="relative bottom-0.5 px-0.5 opacity-60">:</span>
           {seconds < 10 ? `0${seconds}` : seconds}
         </>
       )
@@ -67,11 +66,11 @@ const Auction = ({
   const countdownText = showCountdown ? 'Time Left' : `Ends on ${formattedEndTime[0]} at`
   return (
     <div
-      className={`border border-white/10 rounded-xl min-h-[26rem] lg:h-[calc(100vh_-_143px)] p-4 flex flex-col ${
+      className={`flex min-h-[26rem] flex-col rounded-xl border border-white/10 p-4 lg:h-[calc(100vh_-_143px)] ${
         isNounder ? '' : 'gap-y-4'
       } ${className ?? ''}`}
     >
-      <div className="grid grid-cols-2 gap-2 sticky">
+      <div className="sticky grid grid-cols-2 gap-2">
         <Statistic
           onClick={() => setShowCountdown(showCountdown => !showCountdown)}
           status={status}
@@ -85,14 +84,14 @@ const Auction = ({
         />
         <Statistic
           status={status}
-          className="bg-ui-space col-span-1 w-full"
+          className="col-span-1 w-full bg-ui-space"
           title={isAuctionLive ? 'Top Bid' : 'Winning Bid'}
           content={<span className="tabular-nums">{renderTopBid()}</span>}
         />
         {id !== latestId && (
           <Statistic
             status={isPercentChangeLoading ? 'loading' : status}
-            className="bg-ui-space col-span-1 w-full"
+            className="col-span-1 w-full bg-ui-space"
             title="% Change"
             content={
               isNounder ? (
