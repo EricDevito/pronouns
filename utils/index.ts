@@ -227,6 +227,40 @@ export const getNoun = async (id?: number) => {
   return id ? responseData?.data?.auction : responseData?.data?.auctions[0]
 }
 
+const partialProposalsQuery = `{
+  proposals(first: 100, orderBy: createdBlock, orderDirection: desc) {
+    id
+    title
+    status
+    forVotes
+    againstVotes
+    abstainVotes
+    quorumVotes
+    executionETA
+    startBlock
+    endBlock
+    updatePeriodEndBlock
+    objectionPeriodEndBlock
+    onTimelockV1
+    signers {
+      id
+    }
+  }
+}`
+
+export const getProps = async () => {
+  const response = await fetch(NOUNS_SUBGRAPH_URL, {
+    method: 'post',
+    body: JSON.stringify({
+      query: partialProposalsQuery,
+    }),
+  })
+
+  const responseData = await response?.json()
+
+  return responseData?.data?.proposals
+}
+
 export const getLatestNounId = async () => {
   const response = await fetch(NOUNS_SUBGRAPH_URL, {
     method: 'post',

@@ -12,7 +12,8 @@ import { Layout } from 'components/Layout'
 import Panel from 'components/Panel'
 import { getNoun } from 'utils/index'
 import { AuctionState } from 'utils/types'
-import { useNoun, useLatestNounId } from 'utils/hooks/index'
+import { useNoun, useLatestNounId, useAutoConnect } from 'utils/hooks/index'
+import { useAccount } from 'wagmi'
 
 const Home: NextPage = () => {
   // Imported hooks
@@ -25,6 +26,7 @@ const Home: NextPage = () => {
   const [pctLoading, setPctLoading] = React.useState(false)
   const [latestId, setLatestId] = React.useState<number>()
   const [time, setTime] = React.useState<number>(Date.now())
+  const [isMultisig, setisMultisig] = React.useState<boolean>(false)
 
   // Server state
   const { data: noun, status: nounStatus } = useNoun(id, latestId)
@@ -37,6 +39,17 @@ const Home: NextPage = () => {
     : noun?.endTime && Date.now() < Number(noun?.endTime) * 1000
     ? 'live'
     : 'unsettled'
+
+  const autoConnect = useAutoConnect()
+  const walletClient = useAccount()
+
+  React.useEffect(() => {
+    if (autoConnect) {
+      if (walletClient.connector?.name == 'Safe') {
+        setisMultisig(true)
+      }
+    }
+  }, [autoConnect, walletClient.connector])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -155,7 +168,7 @@ const Home: NextPage = () => {
         <meta property="og:title" content="Auction | Pronouns" />
         <title>Auction | Pronouns</title>
       </Head>
-      <Nav latestId={latestId} />
+      <Nav latestId={latestId} isMultisig={isMultisig} />
       <Layout>
         <Layout.Section width={5}>
           <Panel
