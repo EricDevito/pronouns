@@ -10,6 +10,7 @@ import resolveConfig from 'tailwindcss/resolveConfig'
 import tailwindConfig from '../tailwind.config.js'
 import 'styles/globals.css'
 import '@rainbow-me/rainbowkit/styles.css'
+import { SafeConnector } from 'wagmi/connectors/safe'
 
 const queryClient = new QueryClient()
 const styleConfig = resolveConfig(tailwindConfig)
@@ -26,8 +27,17 @@ const { connectors } = getDefaultWallets({
 })
 
 const wagmiClient = createConfig({
-  autoConnect: true,
-  connectors: connectors,
+  // autoConnect: true,
+  connectors: [
+    new SafeConnector({
+      chains: [mainnet],
+      options: {
+        allowedDomains: [/app.safe.global$/],
+        debug: false,
+      },
+    }),
+    ...connectors(),
+  ],
   publicClient: provider,
   webSocketPublicClient: webSocketProvider,
 })
