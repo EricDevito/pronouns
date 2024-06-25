@@ -24,6 +24,7 @@ const statusToMessage: Record<Status, string> = {
   loading: 'Bid Pending',
   error: 'Bid Failed',
   idle: 'Bid Pending',
+  queued: '',
 }
 
 const computeMinimumNextBid = (currentBid: BigNumber): BigNumber =>

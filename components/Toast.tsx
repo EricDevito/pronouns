@@ -16,10 +16,11 @@ type ToastProps = {
 }
 
 const typeToIcon: Record<Status, React.ReactNode> = {
-  error: <XCircleIcon className="w-8 h-8 text-red-400" />,
-  success: <CheckCircleIcon className="w-8 h-8 text-ui-green" />,
+  error: <XCircleIcon className="h-8 w-8 text-red-400" />,
+  success: <CheckCircleIcon className="h-8 w-8 text-ui-green" />,
   loading: <Image alt="Noun Loading" width={52} height={52} src={loadingNoun} />,
-  idle: <CheckCircleIcon className="w-8 h-8 text-red-400" />,
+  idle: <CheckCircleIcon className="h-8 w-8 text-red-400" />,
+  queued: <></>,
 }
 
 const hide = keyframes({
@@ -72,7 +73,7 @@ const Toast = ({ children, data, setData, txHash }: ToastProps) => {
     <ToastPrimitive.Provider swipeDirection="right">
       {children}
       <StyledToast
-        className={`border border-2 border-neutral-600 rounded-lg bg-neutral-800 flex ${
+        className={`flex rounded-lg border border-2 border-neutral-600 bg-neutral-800 ${
           data.type === 'loading' ? 'p-0' : 'p-4'
         } outline-none`}
         open={data.open}
@@ -83,12 +84,12 @@ const Toast = ({ children, data, setData, txHash }: ToastProps) => {
           <Paragraph className="tracking-wider">{data.message}</Paragraph>
           {txHash && (
             <a rel="noreferrer" target="_blank" href={`https://etherscan.io/tx/${txHash}`}>
-              <ExternalLinkIcon aria-label="Etherscan" className="opacity-60 h-5 w-5" />
+              <ExternalLinkIcon aria-label="Etherscan" className="h-5 w-5 opacity-60" />
             </a>
           )}
         </ToastPrimitive.Title>
       </StyledToast>
-      <ToastPrimitive.Viewport className="fixed bottom-0 right-0 flex flex-col p-6 z-50 gap-2.5 m-0 outline-none list-none" />
+      <ToastPrimitive.Viewport className="fixed bottom-0 right-0 z-50 m-0 flex list-none flex-col gap-2.5 p-6 outline-none" />
     </ToastPrimitive.Provider>
   )
 }

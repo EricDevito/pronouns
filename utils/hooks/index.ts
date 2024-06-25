@@ -3,6 +3,9 @@ import { getDefaultProvider } from 'ethers'
 import { useEffect, useState } from 'react'
 import { getLatestNounId, getNoun, getAccount, getSeeds, getTraitStats, getAmounts, getOpenseaData, getProps } from 'utils/index'
 import { useBlockNumber, useConnect } from 'wagmi'
+import SafeApiKit from '@safe-global/api-kit'
+import { ChainId } from '@nouns/sdk'
+import { ethers } from 'ethers'
 
 export const useLatestNounId = () =>
   useQuery(['latestNounId'], getLatestNounId, {
@@ -103,4 +106,161 @@ export function useAutoConnect() {
   }, [connect, connectors])
 
   return true
+}
+
+export const usePendingGnosisTransactions = (safeAddress: string | undefined, targetAddress: string) => {
+  const [pendingTransactions, setPendingTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (!safeAddress) {
+      setLoading(false)
+      return
+    }
+
+    const apiKit = new SafeApiKit({
+      chainId: BigInt(ChainId.Mainnet),
+    })
+
+    const abi = [
+      {
+        inputs: [
+          {
+            internalType: 'uint256',
+            name: 'proposalId',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint8',
+            name: 'support',
+            type: 'uint8',
+          },
+          {
+            internalType: 'string',
+            name: 'reason',
+            type: 'string',
+          },
+        ],
+        name: 'castRefundableVoteWithReason',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+      {
+        inputs: [
+          {
+            internalType: 'uint256',
+            name: 'proposalId',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint8',
+            name: 'support',
+            type: 'uint8',
+          },
+          {
+            internalType: 'string',
+            name: 'reason',
+            type: 'string',
+          },
+          {
+            internalType: 'uint32',
+            name: 'clientId',
+            type: 'uint32',
+          },
+        ],
+        name: 'castRefundableVoteWithReason',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+      {
+        inputs: [
+          {
+            internalType: 'uint256',
+            name: 'proposalId',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint8',
+            name: 'support',
+            type: 'uint8',
+          },
+        ],
+        name: 'castRefundableVote',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+      {
+        inputs: [
+          {
+            internalType: 'uint256',
+            name: 'proposalId',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint8',
+            name: 'support',
+            type: 'uint8',
+          },
+          {
+            internalType: 'uint32',
+            name: 'clientId',
+            type: 'uint32',
+          },
+        ],
+        name: 'castRefundableVote',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ]
+
+    const iface = new ethers.utils.Interface(abi)
+    const validFunctionNames = ['castRefundableVoteWithReason', 'castRefundableVote', 'castVoteWithReason', 'castVote']
+
+    const fetchPendingTransactions = async () => {
+      try {
+        const result = (await apiKit.getPendingTransactions(safeAddress)).results
+        const filteredResults = result.filter(tx => tx.to.toLowerCase() === targetAddress.toLowerCase() && tx.data !== undefined)
+        const decodedTransactions = filteredResults
+          .map(tx => {
+            if (tx.data == undefined) return false
+
+            const data = tx.data
+
+            try {
+              const parsed = iface.parseTransaction({ data })
+
+              if (!validFunctionNames.includes(parsed.name)) {
+                return false
+              }
+
+              const propId = parsed.args[0]
+              const support = parsed.args[1]
+
+              return {
+                propId: propId,
+                support: support,
+              }
+            } catch (error) {
+              return false
+            }
+          })
+          .filter(Boolean)
+
+        setPendingTransactions(decodedTransactions)
+      } catch (error) {
+        setError(error as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPendingTransactions()
+  }, [safeAddress, targetAddress])
+
+  return { pendingTransactions, loading, error }
 }

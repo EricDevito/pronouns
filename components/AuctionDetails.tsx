@@ -25,6 +25,7 @@ const statusToMessage: Record<Status, string> = {
   loading: 'Settlement Pending',
   error: 'Settlement Failed',
   idle: 'Settlement Pending',
+  queued: '',
 }
 
 const AuctionDetails = ({ status, isNounder, auctionState, startTime, bids }: AuctionDetailsProps) => {

@@ -4,28 +4,45 @@ import { Address, useAccount, useContractRead, useContractWrite, usePrepareContr
 import Button from 'components/Button'
 import Paragraph from 'components/Paragraph'
 import Toast from 'components/Toast'
-import { ToastData } from 'utils/types'
+import { Proposals, Receipt, Status, ToastData } from 'utils/types'
 const { nounsDAOProxy } = getContractAddressesForChainOrThrow(ChainId.Mainnet)
+import SafeApiKit from '@safe-global/api-kit'
+import { useAutoConnect } from 'utils/hooks'
 
-type Proposals = {
-  propId: number
-  status: string
-  title: string
+const statusToMessage: Record<Status, string> = {
+  queued: 'Vote Queued',
+  success: 'Bid Confirmed',
+  loading: 'Bid Pending',
+  error: 'Bid Failed',
+  idle: 'Bid Pending',
 }
 
-interface Receipt {
-  hasVoted: boolean
-  support: number
-  votes: number
-}
+const Vote = ({ propId, status, title, isQueued, queuedVote }: Proposals) => {
+  const apiKit = new SafeApiKit({
+    chainId: BigInt(ChainId.Mainnet),
+  })
 
-const Vote = ({ propId, status, title }: Proposals) => {
+  const [isMultisig, setisMultisig] = React.useState<boolean>(false)
+
+  const autoConnect = useAutoConnect()
+  const walletClient = useAccount()
+
+  React.useEffect(() => {
+    if (autoConnect) {
+      if (walletClient.connector?.name == 'Safe') {
+        setisMultisig(true)
+      }
+    }
+  }, [autoConnect, walletClient.connector])
+
   const [reason, setReason] = React.useState<string>('')
 
   const { isConnected, address } = useAccount()
   const [toast, setToast] = React.useState<ToastData>({ open: false, message: '', type: 'error' })
   const [txHash, setTxHash] = React.useState('')
   const [votingDirection, setVotingDirection] = React.useState<number | undefined>(undefined)
+  const [isVoteQueued, setIsVoteQueued] = React.useState<boolean | undefined>(isQueued)
+  const [queuedVoteDirection, setQueuedVoteDirection] = React.useState<number | undefined>(queuedVote ? queuedVote.support : undefined)
 
   const triggerErrorToast = (message: string) => {
     setToast({ message, open: true, type: 'error' })
@@ -34,6 +51,18 @@ const Vote = ({ propId, status, title }: Proposals) => {
     }, 4000)
 
     return () => clearTimeout(timeout)
+  }
+
+  const triggerDataToast = (status: Status, hash?: string) => {
+    hash && setTxHash(hash)
+    setToast({ message: statusToMessage[status], open: true, type: status })
+    if (status === 'success') {
+      const timeout = setTimeout(() => {
+        setToast(toast => ({ ...toast, open: false }))
+      }, 4000)
+
+      return () => clearTimeout(timeout)
+    }
   }
 
   const NounsDAOLogicV4ABI = [
@@ -121,7 +150,7 @@ const Vote = ({ propId, status, title }: Proposals) => {
               type: 'uint96',
             },
           ],
-          internalType: 'struct NounsDAOStorageV3.Receipt',
+          internalType: 'struct NounsDAOStorage.Receipt',
           name: '',
           type: 'tuple',
         },
@@ -147,6 +176,18 @@ const Vote = ({ propId, status, title }: Proposals) => {
   const { status: voteStatus } = useWaitForTransaction({
     hash: voteTxData?.hash,
   })
+
+  const fetchTransactionStatus = async () => {
+    if (isMultisig) {
+      const queued = await apiKit.getTransaction(voteTxData?.hash as string)
+
+      if (queued) {
+        return 'queued'
+      }
+    } else {
+      return voteStatus
+    }
+  }
 
   const { data } = useContractRead({
     address: nounsDAOProxy as Address,
@@ -180,6 +221,28 @@ const Vote = ({ propId, status, title }: Proposals) => {
     return ''
   }
 
+  const queuedVoteInfo = () => {
+    if (queuedVote || queuedVoteDirection) {
+      let votingDirection = ''
+      switch (queuedVote ? queuedVote?.support : queuedVoteDirection) {
+        case 0:
+          votingDirection = 'Against'
+          break
+        case 1:
+          votingDirection = 'For'
+          break
+        case 2:
+          votingDirection = 'Abstain'
+          break
+        default:
+          votingDirection = 'Invalid'
+          break
+      }
+      return `Queued ${votingDirection}`
+    }
+    return ''
+  }
+
   const queueVote = () => {
     if (isConnected) {
       if (votingDirection == undefined) {
@@ -191,6 +254,18 @@ const Vote = ({ propId, status, title }: Proposals) => {
       triggerErrorToast('Wallet not connected')
     }
   }
+
+  React.useEffect(() => {
+    fetchTransactionStatus().then(txnStatus => {
+      if (txnStatus == 'queued') {
+        triggerDataToast(txnStatus, voteTxData?.hash)
+        setIsVoteQueued(true)
+        setQueuedVoteDirection(votingDirection)
+      } else if (txnStatus !== 'idle') {
+        triggerDataToast(voteStatus, voteTxData?.hash)
+      }
+    })
+  }, [voteStatus])
 
   const propTitleDisplay = `${propId}: ${title.length > 20 ? `${title.substring(0, 17)}...` : title}`
 
@@ -239,8 +314,14 @@ const Vote = ({ propId, status, title }: Proposals) => {
       </div>
       <div className="flex flex-col gap-y-2">
         <Toast data={toast} setData={setToast} txHash={txHash}>
-          <Button onClick={queueVote} type="action" disabled={receipt?.hasVoted}>
-            {receipt?.hasVoted ? <span style={{ fontSize: voterInfo().length > 20 ? '0.96em' : '1em' }}>{voterInfo()}</span> : 'Queue Vote'}
+          <Button onClick={queueVote} type="action" disabled={receipt?.hasVoted || isVoteQueued || !!queuedVote}>
+            {receipt?.hasVoted ? (
+              <span style={{ fontSize: voterInfo().length > 20 ? '0.96em' : '1em' }}>{voterInfo()}</span>
+            ) : isVoteQueued == true || !!queuedVote ? (
+              <span style={{ fontSize: voterInfo().length > 20 ? '0.96em' : '1em' }}>{queuedVoteInfo()}</span>
+            ) : (
+              'Queue Vote'
+            )}
           </Button>
         </Toast>
       </div>

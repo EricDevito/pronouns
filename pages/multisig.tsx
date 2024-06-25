@@ -1,103 +1,13 @@
 import BigNumber from 'bignumber.js'
 import Nav from 'components/Nav'
 import Skeleton from 'components/Skeleton'
-import Vote from 'components/Vote'
 import { NextPage } from 'next'
 import Head from 'next/head'
 import React from 'react'
-import { useEffect, useState } from 'react'
-import { useLatestNounId, useProposals, useBlockNumberData, useBlockTimestamp } from 'utils/hooks'
-import { useBlockNumber } from 'wagmi'
-
-export enum ProposalState {
-  UNDETERMINED = -1,
-  PENDING,
-  ACTIVE,
-  CANCELLED,
-  DEFEATED,
-  SUCCEEDED,
-  QUEUED,
-  EXPIRED,
-  EXECUTED,
-  VETOED,
-  OBJECTION_PERIOD,
-  UPDATABLE,
-}
-export interface PartialProposal {
-  id: string | undefined
-  title: string
-  status: ProposalState
-  forCount: number
-  againstCount: number
-  abstainCount: number
-  startBlock: number
-  endBlock: number
-  eta: Date | undefined
-  quorumVotes: number
-  objectionPeriodEndBlock: number
-  updatePeriodEndBlock: number
-}
-
-export interface ProposalTransactionDetails {
-  targets: string[]
-  values: string[]
-  signatures: string[]
-  calldatas: string[]
-  encodedProposalHash: string
-}
-export interface PartialProposalSubgraphEntity {
-  id: string
-  title: string
-  status: keyof typeof ProposalState
-  forVotes: string
-  againstVotes: string
-  abstainVotes: string
-  startBlock: string
-  endBlock: string
-  executionETA: string | null
-  quorumVotes: string
-  objectionPeriodEndBlock: string
-  updatePeriodEndBlock: string
-  onTimelockV1: boolean | null
-  signers: { id: string }[]
-}
-
-export interface ProposalSubgraphEntity extends ProposalTransactionDetails, PartialProposalSubgraphEntity {
-  description: string
-  createdBlock: string
-  createdTransactionHash: string
-  createdTimestamp: string
-  proposer: { id: string }
-  proposalThreshold: string
-  onTimelockV1: boolean
-  voteSnapshotBlock: string
-}
-
-interface PartialProposalData {
-  data: PartialProposal[]
-  error?: Error
-  loading: boolean
-}
-
-const partialProposalsQuery = ` {
-    proposals(first: 100, orderBy: createdBlock, orderDirection: desc) {
-      id
-      title
-      status
-      forVotes
-      againstVotes
-      abstainVotes
-      quorumVotes
-      executionETA
-      startBlock
-      endBlock
-      updatePeriodEndBlock
-      objectionPeriodEndBlock
-      onTimelockV1
-      signers {
-        id
-      }
-  }`
+import { useLatestNounId, useProposals, useBlockTimestamp } from 'utils/hooks'
+import { useAccount, useBlockNumber } from 'wagmi'
+import VoteGrid from 'components/VoteGrid'
+import { PartialProposal, PartialProposalSubgraphEntity, ProposalState, ProposalSubgraphEntity } from 'utils/types'
 
 const getProposalState = (
   blockNumber: number | undefined,
@@ -182,48 +92,8 @@ const parsePartialSubgraphProposal = (
   }
 }
 
-export const useAllProposalsViaSubgraph = async (): Promise<PartialProposalData> => {
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState()
-
-  const blockNumber = useBlockNumberData()
-  const timestamp = useBlockTimestamp(Number(blockNumber))
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('https://api.goldsky.com/api/public/project_cldf2o9pqagp43svvbk5u3kmo/subgraphs/nouns/prod/gn', {
-          method: 'post',
-          body: JSON.stringify({
-            query: partialProposalsQuery,
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const responseData = await response.json()
-
-        const proposals = responseData.data?.proposals?.map((proposal: ProposalSubgraphEntity) =>
-          parsePartialSubgraphProposal(proposal, Number(blockNumber), timestamp, true)
-        )
-
-        setData(proposals)
-      } catch (e: any) {
-        setError(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [blockNumber, timestamp])
-
-  return { data, loading, error }
-}
-
 const Multisig: NextPage = () => {
+  const { isConnected, address } = useAccount()
   const [latestId, setLatestId] = React.useState<number>()
   const { data: latestNounId, status: latestNounStatus } = useLatestNounId()
   const { data: props, status: propStatus } = useProposals()
@@ -238,7 +108,7 @@ const Multisig: NextPage = () => {
       ?.filter((proposal: PartialProposal) => proposal.status === ProposalState.ACTIVE)
       .sort((a: PartialProposal, b: PartialProposal) => (a.id ?? '').localeCompare(b.id ?? ''))
       .map((proposal: PartialProposal) => ({
-        propId: proposal.id,
+        propId: proposal.id ? Number(proposal.id) : undefined,
         status: proposal.status,
         title: proposal.title,
       })) || []
@@ -262,14 +132,14 @@ const Multisig: NextPage = () => {
           className=""
           loading={propStatus !== 'success'}
           loadingElement={
-            <div className="col-span-1 animate-pulse rounded bg-white/20">{/* <Vote propId={0} status={""} title={""} /> */}</div>
+            <div className="flex flex-col gap-y-2 rounded-xl border border-white/10 p-4">
+              <div className="col-span-2 mb-1 h-5 animate-pulse rounded bg-white/20" />
+              <div className="col-span-2 h-8 animate-pulse rounded bg-white/20" />
+              <div className="col-span-2 h-8 animate-pulse rounded bg-white/20" />
+            </div>
           }
         >
-          {activeProposals.map((prop: any, index: number) => (
-            <div key={index} className="col-span-1">
-              <Vote propId={prop.propId} status={prop.status} title={prop.title} />
-            </div>
-          ))}
+          <VoteGrid activeProposals={activeProposals} isConnected={isConnected} address={address} />
         </Skeleton>
       </div>
     </div>
