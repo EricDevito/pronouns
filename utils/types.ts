@@ -117,6 +117,7 @@ export interface PartialProposalData {
 export type QueuedVote = {
   propId: number
   support: number
+  nonce: number
 }
 
 export type Proposals = {

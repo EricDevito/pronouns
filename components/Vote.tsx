@@ -238,7 +238,7 @@ const Vote = ({ propId, status, title, isQueued, queuedVote }: Proposals) => {
           votingDirection = 'Invalid'
           break
       }
-      return `Queued ${votingDirection}`
+      return queuedVote ? `Queued ${votingDirection} (nonce: ${queuedVote?.nonce})` : `Queued ${votingDirection}`
     }
     return ''
   }

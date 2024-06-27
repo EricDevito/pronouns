@@ -240,10 +240,12 @@ export const usePendingGnosisTransactions = (safeAddress: string | undefined, ta
 
               const propId = parsed.args[0]
               const support = parsed.args[1]
+              const nonce = tx.nonce
 
               return {
                 propId: propId,
                 support: support,
+                nonce: nonce,
               }
             } catch (error) {
               return false
