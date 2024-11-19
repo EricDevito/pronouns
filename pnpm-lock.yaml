@@ -9,8 +9,8 @@ dependencies:
     specifier: ^1.0.6
     version: 1.0.6(react@18.2.0)
   '@nouns/assets':
-    specifier: ^0.8.0
-    version: 0.8.0
+    specifier: ^0.9.0
+    version: 0.9.0
   '@nouns/sdk':
     specifier: ^0.4.0
     version: 0.4.0(ethers@5.7.2)
@@ -949,8 +949,8 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
-  /@nouns/assets@0.8.0:
-    resolution: {integrity: sha512-L2jXwXdmn6q9KoKe84HfHzyPq1A+ZvKPzipqzxMWZAF2ogT1DKVC1gRauPjMLRtR4Qe66dpi+PH/p0SdC7kuEw==}
+  /@nouns/assets@0.9.0:
+    resolution: {integrity: sha512-BsV5kRPfcF6G42aK1Gu9rqpMHPBf2L00g9AmN1gkxPrBRcJ8sB6sypiqfVDSs+m4YQt1rvP0bq2bKUIngN37WQ==}
     dependencies:
       '@ethersproject/bignumber': 5.7.0
       '@ethersproject/solidity': 5.7.0
@@ -1064,6 +1064,7 @@ packages:
     dependencies:
       is-glob: 4.0.3
       micromatch: 4.0.7
+      napi-wasm: 1.1.3
     dev: false
     bundledDependencies:
       - napi-wasm
@@ -7123,6 +7124,10 @@ packages:
     resolution: {integrity: sha512-eSRppjcPIatRIMC1U6UngP8XFcz8MQWGQdt1MTBQ7NaAmvXDfvNxbvWV3x2y6CdEUciCSsDHDQZbhYaB8QEo2g==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
+    dev: false
+
+  /napi-wasm@1.1.3:
+    resolution: {integrity: sha512-h/4nMGsHjZDCYmQVNODIrYACVJ+I9KItbG+0si6W/jSjdA9JbWDoU4LLeMXVcEQGHjttI2tuXqDrbGF7qkUHHg==}
     dev: false
 
   /natural-compare@1.4.0:
