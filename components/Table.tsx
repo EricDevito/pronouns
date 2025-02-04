@@ -10,6 +10,9 @@ import { capitalize } from 'utils/index'
 import { NounSeed, Status, Rarity } from 'utils/types'
 import { useTraitStats } from 'utils/hooks'
 import { EncodedImage } from '@nouns/assets/dist/types'
+import { Address } from 'viem'
+import { useContractRead } from 'wagmi'
+import { NounsDescriptorV3ABI } from './Noun'
 
 const traitProbabilityMap: Record<string, number> = {
   Background: 0.5,
@@ -94,8 +97,12 @@ const generateTableData = (
   return rowsWithTraits
 }
 
-const generateImage = (parts: EncodedImage[], background: string, id: number) =>
-  `data:image/svg+xml;base64,${window.btoa(buildSVG(id === -1 ? [] : [parts[id]], ImageData.palette, background))}`
+const generateImage = (parts: EncodedImage[], background: string, id: number) => {
+  if (id !== -1 && parts[id] == undefined) {
+    return loadingNoun
+  }
+  return `data:image/svg+xml;base64,${window.btoa(buildSVG(id === -1 ? [] : [parts[id]], ImageData.palette, background))}`
+}
 
 const renderNounParts = (seed: NounSeed) => {
   const { parts, background } = getNounData(seed)
@@ -103,23 +110,23 @@ const renderNounParts = (seed: NounSeed) => {
   return [
     {
       name: background === 'e1d7d5' ? 'Warm' : 'Cool',
-      image: generateImage(parts, background, -1),
+      image: generateImage(parts || [], background, -1),
     },
     {
-      name: capitalize(parts[0].filename.replace('body-', '')),
-      image: generateImage(parts, background, 0),
+      name: parts?.[0]?.filename ? capitalize(parts[0].filename.replace('body-', '')) : 'Unknown',
+      image: generateImage(parts || [], background, 0),
     },
     {
-      name: capitalize(parts[1].filename.replace('accessory-', '')),
-      image: generateImage(parts, background, 1),
+      name: parts?.[1]?.filename ? capitalize(parts[1].filename.replace('accessory-', '')) : 'Unknown',
+      image: generateImage(parts || [], background, 1),
     },
     {
-      name: capitalize(parts[2].filename.replace('head-', '')),
-      image: generateImage(parts, background, 2),
+      name: parts?.[2]?.filename ? capitalize(parts[2].filename.replace('head-', '')) : 'Unknown',
+      image: generateImage(parts || [], background, 2),
     },
     {
-      name: capitalize(parts[3].filename.replace('glasses-', '')),
-      image: generateImage(parts, background, 3),
+      name: parts?.[3]?.filename ? capitalize(parts[3].filename.replace('glasses-', '')) : 'Unknown',
+      image: generateImage(parts || [], background, 3),
     },
   ]
 }
@@ -129,7 +136,15 @@ const Table = ({ seed, status, id, latestId }: TableProps) => {
 
   const bg = seed?.background.toString() === '0' ? 'bg-cool' : 'bg-warm'
   const nounParts = seed && renderNounParts(seed)
-  const tableData = generateTableData(data?.body, dataStatus, latestId, nounParts)
+  const tableData = generateTableData(
+    data?.body,
+    dataStatus,
+    latestId,
+    nounParts?.map(part => ({
+      name: part.name,
+      image: part.image.toString(),
+    }))
+  )
 
   return (
     <div className="grid min-w-[480px] grid-cols-[40px_repeat(2,_minmax(0,_1fr))_auto] gap-4">
